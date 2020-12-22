@@ -3,3 +3,6 @@ temporal-local-up:
 
 temporal-local-down:
 	docker-compose down
+
+test-unit:
+	go test -v -short -race ./...

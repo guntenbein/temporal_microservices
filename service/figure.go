@@ -1,6 +1,14 @@
 package service
 
-import "context"
+import (
+	"context"
+	"reflect"
+	"runtime"
+	"strings"
+)
+
+var SquareActivityName = GetActivityName(FigureService{}.Square)
+var VolumeActivityName = GetActivityName(FigureService{}.Volume)
 
 type Figure struct {
 	Length int
@@ -13,33 +21,36 @@ type Figure struct {
 type FigureService struct{}
 
 type FigureRequest struct {
-	figures []Figure
+	Figures []Figure
 }
 
 type FigureResponse struct {
-	figures []Figure
+	Figures []Figure
 }
 
 func (s FigureService) Square(_ context.Context, req FigureRequest) (resp FigureResponse, err error) {
-	if req.figures == nil {
-		return
-	}
-	resp.figures = make([]Figure, 0, len(req.figures))
-	for _, f := range req.figures {
+	resp.Figures = make([]Figure, 0, len(req.Figures))
+	for _, f := range req.Figures {
 		f.Square = f.Width * f.Length
-		resp.figures = append(resp.figures, f)
+		resp.Figures = append(resp.Figures, f)
 	}
 	return
 }
 
 func (s FigureService) Volume(_ context.Context, req FigureRequest) (resp FigureResponse, err error) {
-	if req.figures == nil {
-		return
-	}
-	resp.figures = make([]Figure, 0, len(req.figures))
-	for _, f := range req.figures {
+	resp.Figures = make([]Figure, 0, len(req.Figures))
+	for _, f := range req.Figures {
 		f.Volume = f.Square * f.Height
-		resp.figures = append(resp.figures, f)
+		resp.Figures = append(resp.Figures, f)
 	}
 	return
+}
+
+func GetActivityName(i interface{}) string {
+	fullName := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
+	parts := strings.Split(fullName, ".")
+	lastPart := parts[len(parts)-1]
+	parts2 := strings.Split(lastPart, "-")
+	firstPart := parts2[0]
+	return firstPart
 }
