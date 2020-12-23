@@ -60,26 +60,26 @@ func makeFigures(count int) []service.Figure {
 }
 
 func TestBatchCount(t *testing.T) {
-	assert.EqualValues(t, 1, BatchCount(3, 10))
-	assert.EqualValues(t, 10, BatchCount(99, 10))
-	assert.EqualValues(t, 0, BatchCount(0, 10))
-	assert.EqualValues(t, 0, BatchCount(99, 0))
+	assert.EqualValues(t, 1, batchCount(3, 10))
+	assert.EqualValues(t, 10, batchCount(99, 10))
+	assert.EqualValues(t, 0, batchCount(0, 10))
+	assert.EqualValues(t, 0, batchCount(99, 0))
 }
 
 func TestBatch(t *testing.T) {
 	figures := makeFigures(6)
-	outFigures := Batch(figures, 2, 2)
+	outFigures := batch(figures, 2, 2)
 	assert.EqualValues(t, 2, len(outFigures))
 
-	outFigures = Batch(figures, 2, 10)
+	outFigures = batch(figures, 2, 10)
 	assert.EqualValues(t, 0, len(outFigures))
 
-	outFigures = Batch(figures, -2, 3)
+	outFigures = batch(figures, -2, 3)
 	assert.EqualValues(t, 0, len(outFigures))
 
-	outFigures = Batch(figures, 2, 0)
+	outFigures = batch(figures, 2, 0)
 	assert.EqualValues(t, 0, len(outFigures))
 
-	outFigures = Batch(figures, 1, 5)
+	outFigures = batch(figures, 1, 5)
 	assert.EqualValues(t, 1, len(outFigures))
 }

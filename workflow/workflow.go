@@ -29,7 +29,7 @@ func FigureWorkflow(ctx workflow.Context, req FigureWorkflowRequest) (resp Figur
 		return
 	}
 
-	batchCount := BatchCount(len(req.Figures), temporal_microservices.BatchSize)
+	batchCount := batchCount(len(req.Figures), temporal_microservices.BatchSize)
 
 	selector := workflow.NewNamedSelector(ctx, "select-figures-batches")
 	var errOneBatch error
@@ -38,7 +38,7 @@ func FigureWorkflow(ctx workflow.Context, req FigureWorkflowRequest) (resp Figur
 	var count int
 	var outputFigures = make([]service.Figure, 0, len(req.Figures))
 	for i := 0; i < batchCount; i++ {
-		batch := Batch(req.Figures, i, temporal_microservices.BatchSize)
+		batch := batch(req.Figures, i, temporal_microservices.BatchSize)
 
 		future := processFigures(cancelCtx, batch)
 
@@ -48,7 +48,7 @@ func FigureWorkflow(ctx workflow.Context, req FigureWorkflowRequest) (resp Figur
 				cancelHandler()
 				errOneBatch = err
 			} else {
-				outputFigures = append(outputFigures, resp.Figures...)
+				outputFigures = append(outputFigures, respVolume.Figures...)
 			}
 		})
 
@@ -67,7 +67,7 @@ func FigureWorkflow(ctx workflow.Context, req FigureWorkflowRequest) (resp Figur
 func processFigures(cancelCtx workflow.Context, batch []service.Figure) workflow.Future {
 	future, settable := workflow.NewFuture(cancelCtx)
 	workflow.Go(cancelCtx, func(ctx workflow.Context) {
-		ctx = WithActivityOptions(ctx, temporal_microservices.SquareActivityQueue)
+		ctx = withActivityOptions(ctx, temporal_microservices.SquareActivityQueue)
 		respSquare := service.FigureResponse{}
 		err := workflow.ExecuteActivity(ctx, service.SquareActivityName, service.FigureRequest{Figures: batch}).
 			Get(ctx, &respSquare)
@@ -75,6 +75,7 @@ func processFigures(cancelCtx workflow.Context, batch []service.Figure) workflow
 			settable.Set(nil, err)
 			return
 		}
+		ctx = withActivityOptions(ctx, temporal_microservices.VolumeActivityQueue)
 		respVolume := service.FigureResponse{}
 		err = workflow.ExecuteActivity(ctx, service.VolumeActivityName, service.FigureRequest{Figures: respSquare.Figures}).
 			Get(ctx, &respVolume)
@@ -83,7 +84,7 @@ func processFigures(cancelCtx workflow.Context, batch []service.Figure) workflow
 	return future
 }
 
-func WithActivityOptions(ctx workflow.Context, queue string) workflow.Context {
+func withActivityOptions(ctx workflow.Context, queue string) workflow.Context {
 	ao := workflow.ActivityOptions{
 		TaskQueue:              queue,
 		ScheduleToStartTimeout: time.Minute,
@@ -100,14 +101,14 @@ func WithActivityOptions(ctx workflow.Context, queue string) workflow.Context {
 	return ctxOut
 }
 
-func BatchCount(wholeSize, batchSize int) int {
+func batchCount(wholeSize, batchSize int) int {
 	if batchSize <= 0 {
 		return 0
 	}
 	return int(math.Ceil(float64(wholeSize) / float64(batchSize)))
 }
 
-func Batch(source []service.Figure, batchNumber, batchSize int) []service.Figure {
+func batch(source []service.Figure, batchNumber, batchSize int) []service.Figure {
 	start := batchNumber * batchSize
 	end := start + batchSize
 	atAll := len(source)
