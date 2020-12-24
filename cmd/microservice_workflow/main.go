@@ -62,6 +62,7 @@ func initWorkflowWorker(temporalClient client.Client) worker.Worker {
 	if err != nil {
 		log.Fatal("cannot start temporal worker: " + err.Error())
 	}
+
 	return worker
 }
 
