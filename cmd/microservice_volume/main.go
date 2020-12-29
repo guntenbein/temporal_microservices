@@ -7,7 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 	"temporal_microservices"
-	"temporal_microservices/service"
+	"temporal_microservices/domain/volume"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
@@ -44,7 +44,7 @@ func initActivityWorker(temporalClient client.Client) worker.Worker {
 		MaxConcurrentActivityExecutionSize: temporal_microservices.MaxConcurrentVolumeActivitySize,
 	}
 	worker := worker.New(temporalClient, temporal_microservices.VolumeActivityQueue, workerOptions)
-	worker.RegisterActivity(service.FigureService{}.Volume)
+	worker.RegisterActivity(volume.Service{}.CalculateParallelepipedVolume)
 
 	err := worker.Start()
 	if err != nil {

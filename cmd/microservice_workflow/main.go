@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"temporal_microservices"
 	"temporal_microservices/controller"
-	"temporal_microservices/workflow"
+	"temporal_microservices/domain/workflow"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -56,7 +56,7 @@ func initWorkflowWorker(temporalClient client.Client) worker.Worker {
 		MaxConcurrentWorkflowTaskExecutionSize: temporal_microservices.MaxConcurrentFigureWorkflowSize,
 	}
 	worker := worker.New(temporalClient, temporal_microservices.FigureWorkflowQueue, workerOptions)
-	worker.RegisterWorkflow(workflow.FigureWorkflow)
+	worker.RegisterWorkflow(workflow.CalculateParallelepipedWorkflow)
 
 	err := worker.Start()
 	if err != nil {

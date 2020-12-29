@@ -6,8 +6,7 @@ import (
 	"log"
 	"net/http"
 	"temporal_microservices"
-	"temporal_microservices/service"
-	"temporal_microservices/workflow"
+	"temporal_microservices/domain/workflow"
 
 	"go.temporal.io/sdk/client"
 )
@@ -15,7 +14,7 @@ import (
 func MakeFiguresHandleFunc(temporalClient client.Client) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		ctx := context.Background()
-		input, err := getInputFigures(req)
+		input, err := getInputParallelepipeds(req)
 		if err != nil {
 			writeError(rw, err)
 			return
@@ -36,39 +35,39 @@ func MakeFiguresHandleFunc(temporalClient client.Client) func(http.ResponseWrite
 func writeError(rw http.ResponseWriter, err error) {
 	log.Print(err.Error())
 	rw.WriteHeader(http.StatusInternalServerError)
-	rw.Write([]byte(err.Error()))
+	if _, errWrite := rw.Write([]byte(err.Error())); errWrite != nil {
+		log.Print("error writing the HTTP response: " + errWrite.Error())
+	}
 }
 
-func getInputFigures(req *http.Request) (figures []service.Figure, err error) {
+func getInputParallelepipeds(req *http.Request) (pp []workflow.Parallelepiped, err error) {
 	defer func() {
 		if closeErr := req.Body.Close(); closeErr != nil {
 			log.Print("error closing HTTP body: " + closeErr.Error())
 		}
 	}()
-	err = json.NewDecoder(req.Body).Decode(&figures)
+	err = json.NewDecoder(req.Body).Decode(&pp)
 	return
 }
 
-func executeWorkflow(ctx context.Context, temporalClient client.Client, input []service.Figure) (output []service.Figure, err error) {
+func executeWorkflow(ctx context.Context, temporalClient client.Client, input []workflow.Parallelepiped) (output []workflow.Parallelepiped, err error) {
 	workflowOptions := client.StartWorkflowOptions{
 		TaskQueue: temporal_microservices.FigureWorkflowQueue,
 	}
-	workflowReq := workflow.FigureWorkflowRequest{
-		Figures: input,
-	}
-	workflowRun, err := temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflow.FigureWorkflow, workflowReq)
+	workflowReq := workflow.CalculateParallelepipedWorkflowRequest{Parallelepipeds: input}
+	workflowRun, err := temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflow.CalculateParallelepipedWorkflow, workflowReq)
 	if err != nil {
 		return
 	}
-	workflowResp := workflow.FigureWorkflowResponse{}
+	workflowResp := workflow.CalculateParallelepipedWorkflowResponse{}
 	err = workflowRun.Get(ctx, &workflowResp)
 	if err != nil {
 		return
 	}
-	return workflowResp.Figures, nil
+	return workflowResp.Parallelepipeds, nil
 }
 
-func writeOutputFigures(rw http.ResponseWriter, output []service.Figure) (err error) {
+func writeOutputFigures(rw http.ResponseWriter, output []workflow.Parallelepiped) (err error) {
 	body, err := json.Marshal(output)
 	if err != nil {
 		return
