@@ -14,12 +14,12 @@ import (
 func MakeFiguresHandleFunc(temporalClient client.Client) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		ctx := context.Background()
-		input, err := getInputParallelepipeds(req)
+		wReq, err := getWorkflowRequest(req)
 		if err != nil {
 			writeError(rw, err)
 			return
 		}
-		output, err := executeWorkflow(ctx, temporalClient, input)
+		output, err := executeWorkflow(ctx, temporalClient, wReq)
 		if err != nil {
 			writeError(rw, err)
 			return
@@ -40,22 +40,21 @@ func writeError(rw http.ResponseWriter, err error) {
 	}
 }
 
-func getInputParallelepipeds(req *http.Request) (pp []workflow.Parallelepiped, err error) {
+func getWorkflowRequest(req *http.Request) (wr workflow.CalculateParallelepipedWorkflowRequest, err error) {
 	defer func() {
 		if closeErr := req.Body.Close(); closeErr != nil {
 			log.Print("error closing HTTP body: " + closeErr.Error())
 		}
 	}()
-	err = json.NewDecoder(req.Body).Decode(&pp)
+	err = json.NewDecoder(req.Body).Decode(&wr)
 	return
 }
 
-func executeWorkflow(ctx context.Context, temporalClient client.Client, input []workflow.Parallelepiped) (output []workflow.Parallelepiped, err error) {
+func executeWorkflow(ctx context.Context, temporalClient client.Client, wReq workflow.CalculateParallelepipedWorkflowRequest) (output []workflow.Parallelepiped, err error) {
 	workflowOptions := client.StartWorkflowOptions{
 		TaskQueue: temporal_microservices.FigureWorkflowQueue,
 	}
-	workflowReq := workflow.CalculateParallelepipedWorkflowRequest{Parallelepipeds: input}
-	workflowRun, err := temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflow.CalculateParallelepipedWorkflow, workflowReq)
+	workflowRun, err := temporalClient.ExecuteWorkflow(ctx, workflowOptions, workflow.CalculateParallelepipedWorkflow, wReq)
 	if err != nil {
 		return
 	}

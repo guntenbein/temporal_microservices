@@ -22,6 +22,7 @@ type Parallelepiped struct {
 }
 
 type CalculateParallelepipedWorkflowRequest struct {
+	BatchSize       int
 	Parallelepipeds []Parallelepiped
 }
 
@@ -40,14 +41,12 @@ func CalculateParallelepipedWorkflow(ctx workflow.Context, req CalculateParallel
 		return
 	}
 
-	if temporal_microservices.BatchSize <= 0 {
+	if req.BatchSize <= 0 {
 		err = BusinessError{"makeBatch size cannot be less or equal to zero"}
 		return
 	}
 
-	batchSize := temporal_microservices.BatchSize
-
-	batchCount := batchCount(len(req.Parallelepipeds), batchSize)
+	batchCount := batchCount(len(req.Parallelepipeds), req.BatchSize)
 
 	selector := workflow.NewNamedSelector(ctx, "select-parallelepiped-batches")
 	var errOneBatch error
@@ -57,7 +56,7 @@ func CalculateParallelepipedWorkflow(ctx workflow.Context, req CalculateParallel
 	squareMap := make(map[string]float64)
 	volumeMap := make(map[string]float64)
 	for i := 0; i < batchCount; i++ {
-		batch := makeBatch(req.Parallelepipeds, i, batchSize)
+		batch := makeBatch(req.Parallelepipeds, i, req.BatchSize)
 
 		future := processSquareAsync(cancelCtx, batch)
 		selector.AddFuture(future, func(f workflow.Future) {
@@ -109,8 +108,7 @@ func processSquareAsync(cancelCtx workflow.Context, batch []Parallelepiped) work
 		ctx = withActivityOptions(ctx, temporal_microservices.SquareActivityQueue)
 		respSquare := square.CalculateRectangleSquareResponse{}
 		// map the domain structures
-		dimensions := make([]square.Rectangle, 0)
-		err := deepcopier.Copy(&batch).To(&dimensions)
+		dimensions, err := copySquareBatch(batch)
 		if err != nil {
 			settable.Set(nil, err)
 			return
@@ -123,14 +121,23 @@ func processSquareAsync(cancelCtx workflow.Context, batch []Parallelepiped) work
 	return future
 }
 
+func copySquareBatch(source []Parallelepiped) (dest []square.Rectangle, err error) {
+	dest = make([]square.Rectangle, len(source))
+	for i, p := range source {
+		if err = deepcopier.Copy(&p).To(&dest[i]); err != nil {
+			return
+		}
+	}
+	return
+}
+
 func processVolumeAsync(cancelCtx workflow.Context, batch []Parallelepiped) workflow.Future {
 	future, settable := workflow.NewFuture(cancelCtx)
 	workflow.Go(cancelCtx, func(ctx workflow.Context) {
 		ctx = withActivityOptions(ctx, temporal_microservices.VolumeActivityQueue)
 		respVolume := volume.CalculateParallelepipedVolumeResponse{}
 		// map the domain structures
-		dimensions := make([]volume.Parallelepiped, 0)
-		err := deepcopier.Copy(&batch).To(&dimensions)
+		dimensions, err := copyVolumeBatch(batch)
 		if err != nil {
 			settable.Set(nil, err)
 			return
@@ -141,6 +148,16 @@ func processVolumeAsync(cancelCtx workflow.Context, batch []Parallelepiped) work
 		settable.Set(respVolume, err)
 	})
 	return future
+}
+
+func copyVolumeBatch(source []Parallelepiped) (dest []volume.Parallelepiped, err error) {
+	dest = make([]volume.Parallelepiped, len(source))
+	for i, p := range source {
+		if err = deepcopier.Copy(&p).To(&dest[i]); err != nil {
+			return
+		}
+	}
+	return
 }
 
 func withActivityOptions(ctx workflow.Context, queue string) workflow.Context {

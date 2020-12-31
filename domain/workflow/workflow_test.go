@@ -35,7 +35,7 @@ func (s *IndexationWorkflowTestSuite) Test_WorkflowSuccess() {
 	env.OnActivity(volumeService.CalculateParallelepipedVolume, mock.Anything, mock.Anything).
 		Return([]square.Rectangle{}, nil).Return(volume.CalculateParallelepipedVolumeResponse{}, nil).Times(28)
 
-	env.ExecuteWorkflow(CalculateParallelepipedWorkflow, CalculateParallelepipedWorkflowRequest{pp})
+	env.ExecuteWorkflow(CalculateParallelepipedWorkflow, CalculateParallelepipedWorkflowRequest{BatchSize: 10, Parallelepipeds: pp})
 
 	s.True(env.IsWorkflowCompleted())
 	s.NoError(env.GetWorkflowError())
@@ -53,7 +53,7 @@ func (s *IndexationWorkflowTestSuite) Test_WorkflowFailNoInput() {
 	pp, err := makeParallelepipeds(0, true)
 	s.NoError(err)
 
-	env.ExecuteWorkflow(CalculateParallelepipedWorkflow, CalculateParallelepipedWorkflowRequest{pp})
+	env.ExecuteWorkflow(CalculateParallelepipedWorkflow, CalculateParallelepipedWorkflowRequest{BatchSize: 10, Parallelepipeds: pp})
 
 	s.True(env.IsWorkflowCompleted())
 	s.Error(env.GetWorkflowError())
@@ -71,7 +71,7 @@ func (s *IndexationWorkflowTestSuite) Test_WorkflowFailNoIDs() {
 	pp, err := makeParallelepipeds(276, false)
 	s.NoError(err)
 
-	env.ExecuteWorkflow(CalculateParallelepipedWorkflow, CalculateParallelepipedWorkflowRequest{pp})
+	env.ExecuteWorkflow(CalculateParallelepipedWorkflow, CalculateParallelepipedWorkflowRequest{BatchSize: 10, Parallelepipeds: pp})
 
 	s.True(env.IsWorkflowCompleted())
 	s.Error(env.GetWorkflowError())
