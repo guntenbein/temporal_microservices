@@ -163,7 +163,7 @@ func copyVolumeBatch(source []Parallelepiped) (dest []volume.Parallelepiped, err
 func withActivityOptions(ctx workflow.Context, queue string) workflow.Context {
 	ao := workflow.ActivityOptions{
 		TaskQueue:              queue,
-		ScheduleToStartTimeout: time.Minute,
+		ScheduleToStartTimeout: 24 * time.Hour,
 		StartToCloseTimeout:    24 * time.Hour,
 		HeartbeatTimeout:       time.Second * 5,
 		RetryPolicy: &temporal.RetryPolicy{

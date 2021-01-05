@@ -1,9 +1,13 @@
 package domain
 
 import (
+	"context"
 	"reflect"
 	"runtime"
 	"strings"
+	"time"
+
+	"go.temporal.io/sdk/activity"
 )
 
 func GetActivityName(i interface{}) string {
@@ -13,4 +17,30 @@ func GetActivityName(i interface{}) string {
 	parts2 := strings.Split(lastPart, "-")
 	firstPart := parts2[0]
 	return firstPart
+}
+
+type SimpleHeartbit struct {
+	cancelc chan struct{}
+}
+
+func StartHeartbeat(ctx context.Context, period time.Duration) (h *SimpleHeartbit) {
+	h = &SimpleHeartbit{make(chan struct{})}
+	go func() {
+		for {
+			select {
+			case <-h.cancelc:
+				return
+			default:
+				{
+					time.Sleep(period)
+					activity.RecordHeartbeat(ctx)
+				}
+			}
+		}
+	}()
+	return h
+}
+
+func (h *SimpleHeartbit) Stop() {
+	close(h.cancelc)
 }

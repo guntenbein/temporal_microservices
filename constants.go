@@ -8,4 +8,6 @@ const (
 	MaxConcurrentSquareActivitySize = 10
 	MaxConcurrentVolumeActivitySize = 10
 	MaxConcurrentFigureWorkflowSize = 3
+
+	HeartbeatIntervalSec = 1
 )
