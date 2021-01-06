@@ -21,7 +21,7 @@ func main() {
 	worker := initActivityWorker(temporalClient)
 
 	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 
 	<-signals
 
