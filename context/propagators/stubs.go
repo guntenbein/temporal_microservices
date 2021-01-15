@@ -17,7 +17,12 @@ func (s stubHeaderReaderWriter) Set(key string, value *temporal_commonpb.Payload
 	s.storage[key] = value
 }
 
-func (s stubHeaderReaderWriter) Get(key string, decodedValuePtr interface{}) error {
+func (s stubHeaderReaderWriter) Get(key string) (*temporal_commonpb.Payload, bool) {
+	val, ok := s.storage[key]
+	return val, ok
+}
+
+func (s stubHeaderReaderWriter) GetValue(key string, decodedValuePtr interface{}) error {
 	return converter.GetDefaultDataConverter().FromPayload(s.storage[key], decodedValuePtr)
 }
 

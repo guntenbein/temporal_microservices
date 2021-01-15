@@ -44,7 +44,7 @@ func (s *SecretPropagatorTestSuite) TestInject() {
 	s.NoError(err)
 
 	var headersJwtValue []byte
-	err = headersRWStub.Get(jwt, &headersJwtValue)
+	err = headersRWStub.GetValue(jwt, &headersJwtValue)
 	s.NoError(err)
 	s.EqualValuesf(expectedEncryptedJwt, headersJwtValue, "the token was not properly encrypted")
 }
@@ -104,7 +104,7 @@ func (s *SecretPropagatorTestSuite) PassJWT2WorkflowCtx(ctx temporal_workflow.Co
 		return err
 	}
 	var headersJwtValue []byte
-	err = headersRWStub.Get(jwt, &headersJwtValue)
+	err = headersRWStub.GetValue(jwt, &headersJwtValue)
 	if err != nil {
 		return err
 	}
