@@ -1,3 +1,4 @@
+//nolint:staticcheck
 package propagators
 
 import (
@@ -19,13 +20,6 @@ type StringMapPropagatorTestSuite struct {
 func TestStringMapPropagatorSuite(t *testing.T) {
 	s := StringMapPropagatorTestSuite{propagator: NewStringMapPropagator([]string{"aaa", "bbb"})}
 	suite.Run(t, &s)
-}
-
-func (s *StringMapPropagatorTestSuite) TestOrdinaryContextIncompletePassedFields() {
-	headersRWStub := makeStubHeaderReaderWriter()
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, "aaa", "trololo")
-	s.Error(s.propagator.Inject(ctx, headersRWStub), "error should happen here: context value cannot be found")
 }
 
 func (s *StringMapPropagatorTestSuite) TestOrdinaryContextPassedFields() {
@@ -75,18 +69,13 @@ func (s *StringMapPropagatorTestSuite) CheckContextWorkflow(ctx temporal_workflo
 	headersRWStub := makeStubHeaderReaderWriter()
 
 	ctx = temporal_workflow.WithValue(ctx, "aaa", "trololo")
-	err := propagator.InjectFromWorkflow(ctx, headersRWStub)
-	if err == nil {
-		return errors.New("error should happen here: context value cannot be found")
-	}
-
 	ctx = temporal_workflow.WithValue(ctx, "bbb", "trololo2")
 	ctx = temporal_workflow.WithValue(ctx, "ccc", "trololo")
-	err = propagator.InjectFromWorkflow(ctx, headersRWStub)
+	err := propagator.InjectFromWorkflow(ctx, headersRWStub)
 	if err != nil {
 		return err
 	}
-	// clear context
+	// clear context in order to take the values from the headers
 	ctx = temporal_workflow.WithValue(ctx, "aaa", "")
 	ctx = temporal_workflow.WithValue(ctx, "bbb", "")
 	ctx = temporal_workflow.WithValue(ctx, "ccc", "")

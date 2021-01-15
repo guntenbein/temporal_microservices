@@ -1,3 +1,4 @@
+//nolint:staticcheck
 package propagators
 
 import (
@@ -17,24 +18,12 @@ type SecretPropagatorTestSuite struct {
 }
 
 const (
-	jwt         = "jwt"
-	otherSecret = "other secret"
+	jwt = "jwt"
 )
 
 func TestSecretPropagatorSuite(t *testing.T) {
 	s := SecretPropagatorTestSuite{}
 	suite.Run(t, &s)
-}
-
-func (s *SecretPropagatorTestSuite) TestIncompletePassedFields() {
-	propagator := NewSecretPropagator(SecretPropagatorConfig{
-		Keys:   []string{jwt, otherSecret},
-		Crypto: Base64Crypto{},
-	})
-	headersRWStub := makeStubHeaderReaderWriter()
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, jwt, "some-key")
-	s.Error(propagator.Inject(ctx, headersRWStub), "error should happen here: context value cannot be found")
 }
 
 func (s *SecretPropagatorTestSuite) TestInject() {
@@ -109,7 +98,7 @@ func (s *SecretPropagatorTestSuite) PassJWT2WorkflowCtx(ctx temporal_workflow.Co
 		Crypto: crypto,
 	})
 
-	ctx = temporal_workflow.WithValue(ctx, interface{}(jwt), encryptedJwt)
+	ctx = temporal_workflow.WithValue(ctx, jwt, encryptedJwt)
 	err = propagator.InjectFromWorkflow(ctx, headersRWStub)
 	if err != nil {
 		return err
@@ -124,7 +113,7 @@ func (s *SecretPropagatorTestSuite) PassJWT2WorkflowCtx(ctx temporal_workflow.Co
 	}
 
 	// clear jwt field from the workflow context and read from the headers
-	ctx = temporal_workflow.WithValue(ctx, interface{}(jwt), nil)
+	ctx = temporal_workflow.WithValue(ctx, jwt, nil)
 	ctx, err = propagator.ExtractToWorkflow(ctx, headersRWStub)
 	if err != nil {
 		return err
