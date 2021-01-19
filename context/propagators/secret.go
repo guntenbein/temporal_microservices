@@ -83,7 +83,7 @@ func (s *secretPropagator) Extract(ctx context.Context, reader workflow.HeaderRe
 			if err != nil {
 				return err
 			}
-			ctx = context.WithValue(ctx, interface{}(key), decryptedValue)
+			ctx = context.WithValue(ctx, key, string(decryptedValue))
 		}
 		return nil
 	}); err != nil {

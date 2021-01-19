@@ -65,8 +65,8 @@ func (s *SecretPropagatorTestSuite) TestExtract() {
 	ctxOut, err := propagator.Extract(ctx, headersRWStub)
 	s.NoError(err)
 
-	jwtOutput := ctxOut.Value(jwt)
-	s.EqualValuesf(jwtInput, jwtOutput, "the token was not passed properly")
+	jwtOutput := ctxOut.Value(jwt).(string)
+	s.Equal(jwtInput, jwtOutput, "the token was not passed properly")
 }
 
 // TODO: simplify the unit test
