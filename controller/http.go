@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 	"temporal_microservices"
 	"temporal_microservices/domain/workflow"
 
 	"go.temporal.io/sdk/client"
 )
+
+const bearerPrefix = "bearer"
 
 func MakeFiguresHandleFunc(temporalClient client.Client) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, req *http.Request) {
@@ -19,7 +22,8 @@ func MakeFiguresHandleFunc(temporalClient client.Client) func(http.ResponseWrite
 			writeError(rw, err)
 			return
 		}
-		output, err := executeWorkflow(ctx, temporalClient, wReq)
+		ctxWithRequestMetadata := injectFromHeaders(ctx, req)
+		output, err := executeWorkflow(ctxWithRequestMetadata, temporalClient, wReq)
 		if err != nil {
 			writeError(rw, err)
 			return
@@ -32,14 +36,6 @@ func MakeFiguresHandleFunc(temporalClient client.Client) func(http.ResponseWrite
 	}
 }
 
-func writeError(rw http.ResponseWriter, err error) {
-	log.Print(err.Error())
-	rw.WriteHeader(http.StatusInternalServerError)
-	if _, errWrite := rw.Write([]byte(err.Error())); errWrite != nil {
-		log.Print("error writing the HTTP response: " + errWrite.Error())
-	}
-}
-
 func getWorkflowRequest(req *http.Request) (wr workflow.CalculateParallelepipedWorkflowRequest, err error) {
 	defer func() {
 		if closeErr := req.Body.Close(); closeErr != nil {
@@ -48,6 +44,25 @@ func getWorkflowRequest(req *http.Request) (wr workflow.CalculateParallelepipedW
 	}()
 	err = json.NewDecoder(req.Body).Decode(&wr)
 	return
+}
+
+func injectFromHeaders(ctx context.Context, req *http.Request) context.Context {
+	jwt := extractTokenFromHeaders(req, temporal_microservices.AuthorizationHTTPHeader)
+	processId := req.Header.Get(temporal_microservices.ProcessIDHTTPHeader)
+	//nolint:staticcheck
+	ctx1 := context.WithValue(ctx, temporal_microservices.ProcessIDContextField, processId)
+	//nolint:staticcheck
+	ctxOut := context.WithValue(ctx1, temporal_microservices.JWTContextField, jwt)
+	return ctxOut
+}
+
+func extractTokenFromHeaders(req *http.Request, tokenHeaderName string) string {
+	bearer := req.Header.Get(tokenHeaderName)
+	authHeaderParts := strings.Split(bearer, " ")
+	if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != bearerPrefix {
+		return ""
+	}
+	return authHeaderParts[1]
 }
 
 func executeWorkflow(ctx context.Context, temporalClient client.Client, wReq workflow.CalculateParallelepipedWorkflowRequest) (output []workflow.Parallelepiped, err error) {
@@ -78,4 +93,12 @@ func writeOutputFigures(rw http.ResponseWriter, output []workflow.Parallelepiped
 		return
 	}
 	return
+}
+
+func writeError(rw http.ResponseWriter, err error) {
+	log.Print(err.Error())
+	rw.WriteHeader(http.StatusInternalServerError)
+	if _, errWrite := rw.Write([]byte(err.Error())); errWrite != nil {
+		log.Print("error writing the HTTP response: " + errWrite.Error())
+	}
 }

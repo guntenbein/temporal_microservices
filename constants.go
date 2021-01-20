@@ -10,4 +10,10 @@ const (
 	MaxConcurrentFigureWorkflowSize = 3
 
 	HeartbeatIntervalSec = 1
+
+	ProcessIDContextField = "process-id"
+	JWTContextField       = "jwt"
+
+	ProcessIDHTTPHeader     = "process-id"
+	AuthorizationHTTPHeader = "authorization"
 )
