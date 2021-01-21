@@ -1,6 +1,7 @@
 package workflow
 
 import (
+	"temporal_microservices/context"
 	"temporal_microservices/domain/square"
 	"temporal_microservices/domain/volume"
 	"testing"
@@ -22,7 +23,8 @@ func TestIndexationWorkflowTestSuite(t *testing.T) {
 
 func (s *IndexationWorkflowTestSuite) Test_WorkflowSuccess() {
 	env := s.NewTestWorkflowEnvironment()
-	squareService := square.Service{}
+	squareService, err := square.MakeService(context.SimpleRegistrar{})
+	s.NoError(err)
 	env.RegisterActivity(squareService.CalculateRectangleSquare)
 	volumeService := volume.Service{}
 	env.RegisterActivity(volumeService.CalculateParallelepipedVolume)
@@ -45,7 +47,8 @@ func (s *IndexationWorkflowTestSuite) Test_WorkflowSuccess() {
 
 func (s *IndexationWorkflowTestSuite) Test_WorkflowFailNoInput() {
 	env := s.NewTestWorkflowEnvironment()
-	squareService := square.Service{}
+	squareService, err := square.MakeService(context.SimpleRegistrar{})
+	s.NoError(err)
 	env.RegisterActivity(squareService.CalculateRectangleSquare)
 	volumeService := volume.Service{}
 	env.RegisterActivity(volumeService.CalculateParallelepipedVolume)
@@ -63,7 +66,8 @@ func (s *IndexationWorkflowTestSuite) Test_WorkflowFailNoInput() {
 
 func (s *IndexationWorkflowTestSuite) Test_WorkflowFailNoIDs() {
 	env := s.NewTestWorkflowEnvironment()
-	squareService := square.Service{}
+	squareService, err := square.MakeService(context.SimpleRegistrar{})
+	s.NoError(err)
 	env.RegisterActivity(squareService.CalculateRectangleSquare)
 	volumeService := volume.Service{}
 	env.RegisterActivity(volumeService.CalculateParallelepipedVolume)

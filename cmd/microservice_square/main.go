@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 	"temporal_microservices"
+	"temporal_microservices/context"
 	"temporal_microservices/context/propagators"
 	"temporal_microservices/domain/square"
 
@@ -56,9 +57,13 @@ func initActivityWorker(temporalClient client.Client) worker.Worker {
 		MaxConcurrentActivityExecutionSize: temporal_microservices.MaxConcurrentSquareActivitySize,
 	}
 	worker := worker.New(temporalClient, temporal_microservices.SquareActivityQueue, workerOptions)
-	worker.RegisterActivity(square.Service{}.CalculateRectangleSquare)
+	handler, err := square.MakeService(context.SimpleRegistrar{})
+	if err != nil {
+		log.Fatal("cannot init the service: " + err.Error())
+	}
+	worker.RegisterActivity(handler.CalculateRectangleSquare)
 
-	err := worker.Start()
+	err = worker.Start()
 	if err != nil {
 		log.Fatal("cannot start temporal worker: " + err.Error())
 	}
