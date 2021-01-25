@@ -61,7 +61,7 @@ func (s *stringMapPropagator) Extract(ctx context.Context, reader workflow.Heade
 			if err != nil {
 				return err
 			}
-			ctx = context.WithValue(ctx, interface{}(key), decodedValue)
+			ctx = context.WithValue(ctx, key, decodedValue)
 		}
 		return nil
 	}); err != nil {

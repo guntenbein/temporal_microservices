@@ -3,6 +3,7 @@ package workflow
 import (
 	"math"
 	"temporal_microservices"
+	"temporal_microservices/domain"
 	"temporal_microservices/domain/square"
 	"temporal_microservices/domain/volume"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
+
+var CalculateParallelepipedWorkflowName = domain.GetActivityName(CalculateParallelepipedWorkflow)
 
 type Parallelepiped struct {
 	ID         string
