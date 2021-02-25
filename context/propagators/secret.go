@@ -60,7 +60,7 @@ func (s *secretPropagator) Inject(ctx context.Context, writer workflow.HeaderWri
 // InjectFromWorkflow injects values from context into headers for propagation
 func (s *secretPropagator) InjectFromWorkflow(ctx workflow.Context, writer workflow.HeaderWriter) error {
 	for key := range s.keySet {
-		value := ctx.Value(key)
+		value := ctx.Value(key).([]byte)
 		encodedValue, err := converter.GetDefaultDataConverter().ToPayload(value)
 		if err != nil {
 			return err
