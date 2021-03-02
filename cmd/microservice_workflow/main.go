@@ -9,25 +9,36 @@ import (
 	"os/signal"
 	"syscall"
 	"temporal_microservices"
-	"temporal_microservices/context/propagators"
+	"temporal_microservices/cmd"
 	"temporal_microservices/controller"
 	"temporal_microservices/domain/workflow"
+	"temporal_microservices/tracing"
 	"time"
 
 	"github.com/gorilla/mux"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
-	temporal_workflow "go.temporal.io/sdk/workflow"
+	datatdog_tracing "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
+
+const svcName = "figure-workflow-service"
 
 func main() {
 	log.Print("starting FIGURE WORKFLOW microservice")
 
-	temporalClient := initTemporalClient()
+	temporalClient := cmd.InitTemporalClient()
+
+	datatdog_tracing.Start(
+		datatdog_tracing.WithEnv("local"),
+		datatdog_tracing.WithServiceName(svcName),
+	)
+	defer datatdog_tracing.Stop()
+
+	tracer := tracing.DataDogTracer{}
 
 	worker := initWorkflowWorker(temporalClient)
 
-	httpServer := initHTTPServer(controller.MakeFiguresHandleFunc(temporalClient))
+	httpServer := initHTTPServer(controller.MakeFiguresHandleFunc(temporalClient, tracer))
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
@@ -42,23 +53,6 @@ func main() {
 	worker.Stop()
 
 	log.Print("closing FIGURE WORKFLOW microservice")
-}
-
-func initTemporalClient() client.Client {
-	temporalClientOptions := client.Options{HostPort: net.JoinHostPort("localhost", "7233"),
-		ContextPropagators: []temporal_workflow.ContextPropagator{
-			propagators.NewStringMapPropagator([]string{temporal_microservices.ProcessIDContextField}),
-			propagators.NewSecretPropagator(propagators.SecretPropagatorConfig{
-				Keys:   []string{temporal_microservices.JWTContextField},
-				Crypto: propagators.Base64Crypto{},
-			}),
-		},
-	}
-	temporalClient, err := client.NewClient(temporalClientOptions)
-	if err != nil {
-		log.Fatal("cannot start temporal client: " + err.Error())
-	}
-	return temporalClient
 }
 
 func initWorkflowWorker(temporalClient client.Client) worker.Worker {

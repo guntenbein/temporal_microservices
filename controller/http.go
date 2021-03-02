@@ -8,15 +8,21 @@ import (
 	"strings"
 	"temporal_microservices"
 	"temporal_microservices/domain/workflow"
+	"temporal_microservices/tracing"
 
 	"go.temporal.io/sdk/client"
 )
 
 const bearerPrefix = "bearer"
 
-func MakeFiguresHandleFunc(temporalClient client.Client) func(http.ResponseWriter, *http.Request) {
+func MakeFiguresHandleFunc(temporalClient client.Client, tracer tracing.Tracer) func(http.ResponseWriter, *http.Request) {
 	return func(rw http.ResponseWriter, req *http.Request) {
 		ctx := context.Background()
+		var err error
+		span, ctx := tracer.StartSpan(ctx, "HTTP starter for FiguresWorkflow")
+		defer func() {
+			span.Finish(err)
+		}()
 		wReq, err := getWorkflowRequest(req)
 		if err != nil {
 			writeError(rw, err)

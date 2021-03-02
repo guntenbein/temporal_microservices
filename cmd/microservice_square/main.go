@@ -2,26 +2,34 @@ package main
 
 import (
 	"log"
-	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"temporal_microservices"
+	"temporal_microservices/cmd"
 	"temporal_microservices/context"
-	"temporal_microservices/context/propagators"
 	"temporal_microservices/domain/square"
+	"temporal_microservices/tracing"
 
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
-	"go.temporal.io/sdk/workflow"
+	dtatdog_tracing "gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 func main() {
 	log.Print("starting SQUARE microservice")
 
-	temporalClient := initTemporalClient()
+	temporalClient := cmd.InitTemporalClient()
 
-	worker := initActivityWorker(temporalClient)
+	dtatdog_tracing.Start(
+		dtatdog_tracing.WithEnv("local"),
+		dtatdog_tracing.WithServiceName("square-service"),
+	)
+	defer dtatdog_tracing.Stop()
+
+	tracer := tracing.DataDogTracer{}
+
+	worker := initActivityWorker(temporalClient, tracer)
 
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
@@ -33,31 +41,12 @@ func main() {
 	log.Print("closing SQUARE microservice")
 }
 
-func initTemporalClient() client.Client {
-	temporalClientOptions := client.Options{
-		HostPort: net.JoinHostPort("localhost", "7233"),
-		ContextPropagators: []workflow.ContextPropagator{
-			propagators.NewStringMapPropagator([]string{temporal_microservices.ProcessIDContextField}),
-			propagators.NewSecretPropagator(propagators.SecretPropagatorConfig{
-				Keys:   []string{temporal_microservices.JWTContextField},
-				Crypto: propagators.Base64Crypto{},
-			}),
-		},
-	}
-
-	temporalClient, err := client.NewClient(temporalClientOptions)
-	if err != nil {
-		log.Fatal("cannot start temporal client: " + err.Error())
-	}
-	return temporalClient
-}
-
-func initActivityWorker(temporalClient client.Client) worker.Worker {
+func initActivityWorker(temporalClient client.Client, tracer tracing.Tracer) worker.Worker {
 	workerOptions := worker.Options{
 		MaxConcurrentActivityExecutionSize: temporal_microservices.MaxConcurrentSquareActivitySize,
 	}
 	worker := worker.New(temporalClient, temporal_microservices.SquareActivityQueue, workerOptions)
-	handler, err := square.MakeService(context.SimpleRegistrar{})
+	handler, err := square.MakeService(context.SimpleRegistrar{}, tracer)
 	if err != nil {
 		log.Fatal("cannot init the service: " + err.Error())
 	}

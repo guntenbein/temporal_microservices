@@ -1,3 +1,5 @@
+API_KEY=????
+
 temporal-local-up:
 	docker-compose up -d
 
@@ -26,3 +28,6 @@ run-volume:
 
 run-workflow:
 	go run cmd/microservice_workflow/main.go
+
+run-datadog-agent:
+	docker run -d --name dd-agent -p 8126:8126 -v /var/run/docker.sock:/var/run/docker.sock:ro -v /proc/:/host/proc/:ro -v /sys/fs/cgroup/:/host/sys/fs/cgroup:ro -e DD_API_KEY=$(API_KEY) -e DD_SITE="datadoghq.com" gcr.io/datadoghq/agent:7
