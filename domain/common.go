@@ -32,8 +32,8 @@ func StartHeartbeat(ctx context.Context, period time.Duration) (h *SimpleHeartbi
 				return
 			default:
 				{
-					time.Sleep(period)
 					activity.RecordHeartbeat(ctx)
+					time.Sleep(period)
 				}
 			}
 		}
